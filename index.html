@@ -51,11 +51,9 @@
         .sidebar { display: flex; flex-direction: column; align-items: center; justify-content: space-between; padding: 2px 0; width: 22px; z-index: 2; }
         .node { width: 20px; height: 20px; border-radius: 50%; background: #660014; color: #ffb3b3; font-family: 'Orbitron', sans-serif; font-weight: 900; font-size: 10px; display: flex; align-items: center; justify-content: center; }
         .node.hi-red { background: #ff0033; color: #fff; box-shadow: 0 0 12px rgba(255,0,51,0.9); }
-        
-        /* Display Box */
         .display-box { flex: 1; border: 1px solid rgba(255,0,51,0.3); border-radius: 6px; display: flex; flex-direction: column; position: relative; overflow: hidden; background-size: cover; background-position: center; z-index: 1; }
         .disp-id-wrap { text-align: center; padding: 4px 0; border-bottom: 2px solid transparent; border-image: linear-gradient(90deg, transparent, #ff0033, transparent) 1; background: rgba(0,0,0,0.5); z-index: 2; }
-        .disp-id { color: #ff6666; font-family: 'Share Tech Mono', monospace; font-size: 10px; font-weight: 700; letter-spacing: 0.5px;}
+        .disp-id { color: #ff6666; font-family: 'Share Tech Mono', monospace; font-size: 10px; font-weight: 700; letter-spacing: 0.5px; }
         .disp-main-center { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; width: 100%; position: relative; z-index: 1; pointer-events: none; }
 
         /* Ready Tool */
@@ -123,11 +121,10 @@
 
 <!-- DRAGGABLE FLOATING CONTAINER -->
 <div id="floating-widget">
-    <!-- MINI FLOATING ICON -->
+    <!-- MINI FLOATING ICON (FIXED IMAGE PATH) -->
     <div id='mini-wrapper' onclick='openM()'>
       <div class='mini-orb'>
-        <!-- LOGO IMAGE ID GIVEN -->
-        <div class='mini-orb-inner'><img id='mini-logo-img' src=''/></div>
+        <div class='mini-orb-inner'><img src='logo.png'/></div>
       </div>
     </div>
 
@@ -154,9 +151,9 @@
               <div class='sidebar'>
                   <div class='node'>L</div><div class='node'>I</div><div class='node'>V</div><div class='node hi-red'>E</div>
               </div>
-              <!-- DISPLAY BOX BACKGROUND ID GIVEN -->
-              <div class='display-box' id='display-box'>
-                  <div class='disp-id-wrap' id='disp-id-wrap'><span class='disp-id' id='disp-id'>ID : ---</span></div>
+              <!-- DISPLAY BOX (FIXED IMAGE PATH) -->
+              <div class='display-box' id='display-box' style="background-image: url('back.png');">
+                  <div class='disp-id-wrap' id='disp-id-wrap'><span class='disp-id' id='disp-id'>ID ---</span></div>
                   <div class='disp-main-center' id='disp-main-center'></div>
               </div>
           </div>
@@ -175,34 +172,16 @@
 </div>
 
 <script>
-// ==========================================
-// ⚙️ IMAGE CONFIGURATION (PASTE RAW GITHUB LINKS HERE)
-// ==========================================
-// IMPORTANT: Use "raw.githubusercontent.com" links, NOT "github.com" blob links.
-// How to get Raw Link? Open image in github -> click "Download" or "Raw" button -> copy URL from address bar.
-const GITHUB_IMAGES = {
-    logo: "https://raw.githubusercontent.com/YourUsername/YourRepo/main/logo.png",
-    back: "https://raw.githubusercontent.com/YourUsername/YourRepo/main/back.png",
-    ani:  "https://raw.githubusercontent.com/YourUsername/YourRepo/main/ani.png",
-    num0: "https://raw.githubusercontent.com/YourUsername/YourRepo/main/num_0.png",
-    num1: "https://raw.githubusercontent.com/YourUsername/YourRepo/main/num_1.png",
-    num2: "https://raw.githubusercontent.com/YourUsername/YourRepo/main/num_2.png",
-    num3: "https://raw.githubusercontent.com/YourUsername/YourRepo/main/num_3.png",
-    num4: "https://raw.githubusercontent.com/YourUsername/YourRepo/main/num_4.png",
-    num5: "https://raw.githubusercontent.com/YourUsername/YourRepo/main/num_5.png",
-    num6: "https://raw.githubusercontent.com/YourUsername/YourRepo/main/num_6.png",
-    num7: "https://raw.githubusercontent.com/YourUsername/YourRepo/main/num_7.png",
-    num8: "https://raw.githubusercontent.com/YourUsername/YourRepo/main/num_8.png",
-    num9: "https://raw.githubusercontent.com/YourUsername/YourRepo/main/num_9.png"
-};
+// --- 1. GENERATE 17-DIGIT ID ---
+function generate17DigitID() {
+    var randomID = "";
+    for(var i=0; i<17; i++) {
+        randomID += Math.floor(Math.random() * 10).toString();
+    }
+    return randomID;
+}
 
-// SETUP IMAGES ON LOAD
-document.getElementById('mini-logo-img').src = GITHUB_IMAGES.logo;
-document.getElementById('display-box').style.backgroundImage = "url('" + GITHUB_IMAGES.back + "')";
-// ==========================================
-
-
-// --- 1. LOGIN LOGIC ---
+// --- 2. LOGIN LOGIC ---
 function verifyLogin() {
     var pass = document.getElementById('pass-input').value.trim();
     if (pass === 'RAM') { 
@@ -210,30 +189,20 @@ function verifyLogin() {
         document.getElementById('background-webview').style.display = 'block';
         document.getElementById('floating-widget').style.display = 'flex';
         initWidgetPosition(); 
-        update17DigitPeriod(); // Generate First 17-digit ID
+        
+        // Setup 17 Digit ID when login is successful
+        currentPeriod = generate17DigitID();
+        document.getElementById('disp-id').innerText = 'ID ' + currentPeriod;
+
         render(); 
     } else {
         document.getElementById('login-error').style.display = 'block';
     }
 }
 
-// --- 2. GENERATE 17-DIGIT ID (LIKE WINGO) ---
-var currentPeriod = '';
-function update17DigitPeriod() {
-    let now = new Date();
-    // YYYYMMDD format
-    let datePart = now.getFullYear().toString() + 
-                   (now.getMonth() + 1).toString().padStart(2, '0') + 
-                   now.getDate().toString().padStart(2, '0');
-    // Random 9 digits (e.g. 100023456)
-    let randomPart = Math.floor(100000000 + Math.random() * 900000000).toString();
-    currentPeriod = datePart + randomPart; // Total 17 Digits
-    document.getElementById('disp-id').innerText = 'ID : ' + currentPeriod;
-}
-
-
 // --- 3. HACK TOOL LOGIC ---
 var state = 'ready'; 
+var currentPeriod = '12345678901234567'; // Placeholder, gets updated on login
 var currentResultNum = '5';
 var isOpen = false;
 
@@ -254,7 +223,6 @@ function closeM() {
 
 function startHack() {
     if(state === 'ready' || state === 'result') {
-        update17DigitPeriod(); // Update 17-digit ID on new scan
         state = 'scanning';
         render();
         setTimeout(function() {
@@ -274,9 +242,9 @@ function render() {
     if (state === 'scanning') {
         idWrap.style.display = 'none';
         badgeEl.innerText = 'SCAN';
-        // USE GITHUB ANIMATION IMAGE HERE
+        // FIXED IMAGE PATH (ani.png)
         mainCenterEl.innerHTML = 
-            "<div class='full-scan-box' style=\"background-image: url('" + GITHUB_IMAGES.ani + "');\">" +
+            "<div class='full-scan-box' style=\"background-image: url('ani.png');\">" +
               "<div class='full-scan-line'></div>" +
               "<div class='scan-overlay-text'>DECRYPTING DATA...</div>" +
             "</div>";
@@ -286,22 +254,18 @@ function render() {
         idWrap.style.display = 'block';
         badgeEl.innerText = 'WINGO';
         var bsm = (parseInt(currentResultNum) >= 5) ? 'BIG' : 'SMALL';
-        
-        // GET GITHUB NUMBER IMAGE DYNAMICALLY
-        var numImgSrc = GITHUB_IMAGES['num' + currentResultNum];
-
+        // FIXED IMAGE PATH (num_X.png)
         mainCenterEl.innerHTML = 
             '<div style="display:flex; flex-direction:column; width:100%; justify-content:center; align-items:center; gap: 4px;">' +
               '<div class="res-row">' +
                 '<div class="res-text-huge">' + bsm + '</div>' +
                 '<div class="res-right"><div class="number-snake-wrap">' +
                    '<div class="number-snake-bg"></div>' +
-                   '<div class="number-inner"><img src="' + numImgSrc + '" /></div>' +
+                   '<div class="number-inner"><img src="num_' + currentResultNum + '.png" /></div>' +
                 '</div></div>' +
               '</div>' +
               '<div class="seq-glass-box">' +
-                // SHOW LAST 5 DIGITS OF THE 17-DIGIT ID
-                '<div class="seq-glass-text">SEQ : ' + currentPeriod.slice(-5) + '</div>' + 
+                '<div class="seq-glass-text">SEQ : ' + currentPeriod.slice(-5) + '</div>' +
               '</div>' +
             '</div>';
         btnEl.innerText = '⌕ ANALYSIS';
