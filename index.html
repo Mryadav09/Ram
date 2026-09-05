@@ -6,7 +6,6 @@
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; -webkit-tap-highlight-color: transparent; }
         
-        /* Body prevents scrolling when touching the tool */
         body { background: #000; overflow: hidden; width: 100vw; height: 100vh; font-family: 'Rajdhani', sans-serif; position: relative; overscroll-behavior: none; }
 
         /* --- LOGIN PAGE UI --- */
@@ -121,14 +120,12 @@
 
 <!-- DRAGGABLE FLOATING CONTAINER -->
 <div id="floating-widget">
-    <!-- MINI FLOATING ICON (FIXED IMAGE PATH) -->
     <div id='mini-wrapper' onclick='openM()'>
       <div class='mini-orb'>
         <div class='mini-orb-inner'><img src='logo.png'/></div>
       </div>
     </div>
 
-    <!-- MAIN TOOL PANEL -->
     <div id='main-wrapper'>
       <div id='yv-hud-outer'>
         <div id='yv-hud'>
@@ -151,7 +148,6 @@
               <div class='sidebar'>
                   <div class='node'>L</div><div class='node'>I</div><div class='node'>V</div><div class='node hi-red'>E</div>
               </div>
-              <!-- DISPLAY BOX (FIXED IMAGE PATH) -->
               <div class='display-box' id='display-box' style="background-image: url('back.png');">
                   <div class='disp-id-wrap' id='disp-id-wrap'><span class='disp-id' id='disp-id'>ID ---</span></div>
                   <div class='disp-main-center' id='disp-main-center'></div>
@@ -172,16 +168,77 @@
 </div>
 
 <script>
-// --- 1. GENERATE 17-DIGIT ID ---
-function generate17DigitID() {
-    var randomID = "";
-    for(var i=0; i<17; i++) {
-        randomID += Math.floor(Math.random() * 10).toString();
+// ==========================================
+// 1. REAL-TIME 17-DIGIT PERIOD ID GENERATOR
+// ==========================================
+var currentPeriod = '';
+
+function updateLivePeriod() {
+    var now = new Date();
+    var y = now.getFullYear();
+    var m = (now.getMonth() + 1).toString().padStart(2, '0');
+    var d = now.getDate().toString().padStart(2, '0');
+    
+    // Calculate total minutes passed since midnight (12:00 AM)
+    var hours = now.getHours();
+    var minutes = now.getMinutes();
+    var totalMinutes = (hours * 60) + minutes + 1; 
+    
+    // Standard 17-digit format: YYYYMMDD + 1000 + XXXXX
+    var dateString = y + m + d;
+    var periodString = totalMinutes.toString().padStart(5, '0');
+    
+    currentPeriod = dateString + "1000" + periodString;
+    
+    // Update the ID on screen only if state is 'ready'
+    if (state === 'ready' || state === 'result') {
+        var dispId = document.getElementById('disp-id');
+        if (dispId) dispId.innerText = 'ID ' + currentPeriod;
     }
-    return randomID;
 }
 
-// --- 2. LOGIN LOGIC ---
+// Start auto-updating ID every second
+setInterval(updateLivePeriod, 1000);
+
+
+// ==========================================
+// 2. FETCH RESULT FROM YOUR API
+// ==========================================
+async function fetchResultFromAPI(periodID) {
+    try {
+        /* 
+           🔥 यहाँ अपना API URL डालें 🔥
+           उदाहरण: "https://your-api.com/getResult?period=" + periodID 
+        */
+        let myAPI_URL = "https://example-api.com/get?period=" + periodID; 
+        
+        // API Call
+        let response = await fetch(myAPI_URL);
+        let data = await response.json();
+        
+        // मान लीजिये आपकी API में data.result (0 से 9) आता है:
+        if (data && data.result !== undefined) {
+            return data.result.toString();
+        } else {
+            throw new Error("Invalid API Response");
+        }
+    } catch(err) {
+        // अगर API काम नहीं करती, तो रैंडम नंबर जनरेट कर देगा (ताकि टूल रुके ना)
+        console.log("API Error, using fallback...", err);
+        return Math.floor(Math.random() * 10).toString();
+    }
+}
+
+
+// ==========================================
+// 3. LOGIN & CORE LOGIC
+// ==========================================
+var state = 'ready'; 
+var currentResultNum = '5';
+var isOpen = false;
+
+setInterval(function(){ document.getElementById('ping-text').innerText = (Math.floor(Math.random() * 25) + 30) + ' ms'; }, 1000);
+
 function verifyLogin() {
     var pass = document.getElementById('pass-input').value.trim();
     if (pass === 'RAM') { 
@@ -189,29 +246,18 @@ function verifyLogin() {
         document.getElementById('background-webview').style.display = 'block';
         document.getElementById('floating-widget').style.display = 'flex';
         initWidgetPosition(); 
-        
-        // Setup 17 Digit ID when login is successful
-        currentPeriod = generate17DigitID();
-        document.getElementById('disp-id').innerText = 'ID ' + currentPeriod;
-
+        updateLivePeriod(); // Set initial period ID
         render(); 
     } else {
         document.getElementById('login-error').style.display = 'block';
     }
 }
 
-// --- 3. HACK TOOL LOGIC ---
-var state = 'ready'; 
-var currentPeriod = '12345678901234567'; // Placeholder, gets updated on login
-var currentResultNum = '5';
-var isOpen = false;
-
-setInterval(function(){ document.getElementById('ping-text').innerText = (Math.floor(Math.random() * 25) + 30) + ' ms'; }, 1000);
-
 function openM() { 
     if(isOpen) return; isOpen = true; 
     document.getElementById('main-wrapper').style.display='flex'; 
     document.getElementById('mini-wrapper').style.display='none'; 
+    updateLivePeriod(); 
     render(); 
 }
 
@@ -221,12 +267,18 @@ function closeM() {
     document.getElementById('mini-wrapper').style.display='flex'; 
 }
 
-function startHack() {
+// --- SCANNING & API TRIGGER ---
+async function startHack() {
     if(state === 'ready' || state === 'result') {
         state = 'scanning';
         render();
+        
+        // 1. यहाँ API से रिजल्ट मँगवाएगा
+        let fetchedResult = await fetchResultFromAPI(currentPeriod);
+        
+        // 2. 3 सेकंड का एनीमेशन दिखाने के बाद रिजल्ट शो करेगा
         setTimeout(function() {
-            currentResultNum = Math.floor(Math.random() * 10); // Random 0-9
+            currentResultNum = fetchedResult; 
             state = 'result';
             render();
         }, 3000);
@@ -242,7 +294,6 @@ function render() {
     if (state === 'scanning') {
         idWrap.style.display = 'none';
         badgeEl.innerText = 'SCAN';
-        // FIXED IMAGE PATH (ani.png)
         mainCenterEl.innerHTML = 
             "<div class='full-scan-box' style=\"background-image: url('ani.png');\">" +
               "<div class='full-scan-line'></div>" +
@@ -254,7 +305,6 @@ function render() {
         idWrap.style.display = 'block';
         badgeEl.innerText = 'WINGO';
         var bsm = (parseInt(currentResultNum) >= 5) ? 'BIG' : 'SMALL';
-        // FIXED IMAGE PATH (num_X.png)
         mainCenterEl.innerHTML = 
             '<div style="display:flex; flex-direction:column; width:100%; justify-content:center; align-items:center; gap: 4px;">' +
               '<div class="res-row">' +
@@ -284,7 +334,9 @@ function render() {
     }
 }
 
-// --- 4. DRAG LOGIC (NO BACKGROUND SCROLLING) ---
+// ==========================================
+// 4. DRAG LOGIC (NO BACKGROUND SCROLLING)
+// ==========================================
 function makeDraggable(el) {
     var pos1 = 0, pos2 = 0, pos3 = 0, pos4 = 0;
     
